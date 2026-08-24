@@ -1,0 +1,49 @@
+name: vidhyakandhi_foundation
+description: Vidhyakaanthi Foundation - Donation Management App
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Firebase
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.6.0
+  
+  # UI & Navigation
+  cupertino_icons: ^1.0.6
+  intl: ^0.19.0
+  
+  # PDF Generation
+  pdf: ^3.10.7
+  printing: ^5.12.0
+  path_provider: ^2.1.1
+  
+  # Sharing
+  share_plus: ^7.2.1
+  url_launcher: ^6.2.2
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # Utilities
+  uuid: ^4.2.1
+  http: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/logo/
