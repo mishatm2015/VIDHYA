@@ -38,4 +38,15 @@ class StorageService {
       rethrow;
     }
   }
+
+  Future<void> deletePdf(String? pdfUrl) async {
+    if (pdfUrl == null || pdfUrl.isEmpty) return;
+    try {
+      final ref = _storage.refFromURL(pdfUrl);
+      await ref.delete();
+    } catch (e) {
+      // PDF may already be missing; don't block donation delete
+      debugPrint('Error deleting PDF: $e');
+    }
+  }
 }

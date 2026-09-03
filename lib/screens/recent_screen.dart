@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../models/donation_model.dart';
 import '../services/firestore_service.dart';
-import 'package:printing/printing.dart';
+import '../services/storage_service.dart';
 import 'pdf_preview_screen.dart';
 
 class RecentScreen extends StatefulWidget {
@@ -36,7 +36,6 @@ class _RecentScreenState extends State<RecentScreen> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -54,8 +53,6 @@ class _RecentScreenState extends State<RecentScreen> {
               },
             ),
           ),
-
-          // Donations List
           Expanded(
             child: StreamBuilder<List<DonationModel>>(
               stream: Provider.of<FirestoreService>(context).getDonationsStream(),
@@ -78,12 +75,19 @@ class _RecentScreenState extends State<RecentScreen> {
 
                 var donations = snapshot.data!;
 
-                // Filter by search query
                 if (_searchQuery.isNotEmpty) {
                   donations = donations.where((donation) {
-                    return donation.donorName.toLowerCase().contains(_searchQuery) ||
+                    return donation.donorName
+                            .toLowerCase()
+                            .contains(_searchQuery) ||
                         donation.phone.contains(_searchQuery);
                   }).toList();
+                }
+
+                if (donations.isEmpty) {
+                  return const Center(
+                    child: Text('No matching donations found'),
+                  );
                 }
 
                 return ListView.builder(
@@ -103,63 +107,187 @@ class _RecentScreenState extends State<RecentScreen> {
 
   Widget _buildDonationCard(DonationModel donation) {
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final initial = donation.donorName.isNotEmpty
+        ? donation.donorName[0].toUpperCase()
+        : '?';
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor,
-          child: Text(
-            donation.donorName[0].toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        title: Text(
-          donation.donorName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Project: ${donation.projectName}'),
-            Text('Date: ${dateFormat.format(donation.createdAt)}'),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '₹${donation.amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            if (donation.pdfUrl != null)
-              const Icon(Icons.picture_as_pdf, size: 16, color: Colors.red),
-          ],
-        ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
           if (donation.pdfUrl != null) {
-            _openPdf(donation.pdfUrl!);
+            _openPdf(donation);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('PDF not available')),
             );
           }
         },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: Theme.of(context).primaryColor,
+                child: Text(
+                  initial,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      donation.donorName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Project: ${donation.projectName}',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      'Date: ${dateFormat.format(donation.createdAt)}',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${donation.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (donation.pdfUrl != null)
+                        const Icon(
+                          Icons.picture_as_pdf,
+                          size: 18,
+                          color: Colors.red,
+                        ),
+                      IconButton(
+                        tooltip: 'Delete donation',
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: Colors.red.shade400,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _confirmDelete(donation),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Future<void> _openPdf(String pdfUrl) async {
+  Future<void> _confirmDelete(DonationModel donation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Donation?'),
+        content: Text(
+          'This will permanently delete the donation from '
+          '${donation.donorName} (₹${donation.amount.toStringAsFixed(2)}).\n\n'
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteDonation(donation);
+    }
+  }
+
+  Future<void> _deleteDonation(DonationModel donation) async {
+    if (donation.id == null || donation.id!.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to delete: missing donation ID')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
     try {
-      // Show loading indicator
+      final storageService = StorageService();
+      await storageService.deletePdf(donation.pdfUrl);
+
+      if (!mounted) return;
+      final firestoreService =
+          Provider.of<FirestoreService>(context, listen: false);
+      await firestoreService.deleteDonation(donation.id!);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation deleted successfully')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting donation: $e')),
+      );
+    } finally {
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _openPdf(DonationModel donation) async {
+    final pdfUrl = donation.pdfUrl;
+    if (pdfUrl == null) return;
+
+    try {
       if (!mounted) return;
       showDialog(
         context: context,
@@ -169,39 +297,19 @@ class _RecentScreenState extends State<RecentScreen> {
         ),
       );
 
-      // Download PDF from Firebase Storage
       final response = await http.get(Uri.parse(pdfUrl));
-      
+
       if (response.statusCode == 200) {
-        // Save to temporary file
         final tempDir = await getTemporaryDirectory();
-        final file = File('${tempDir.path}/receipt_${DateTime.now().millisecondsSinceEpoch}.pdf');
+        final file = File(
+          '${tempDir.path}/receipt_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
         await file.writeAsBytes(response.bodyBytes);
 
-        // Close loading dialog
         if (mounted) {
           Navigator.pop(context);
         }
 
-        // Find the donation to pass to preview screen
-        final firestoreService = Provider.of<FirestoreService>(context, listen: false);
-        final donations = await firestoreService.getDonations();
-        final donation = donations.firstWhere(
-          (d) => d.pdfUrl == pdfUrl,
-          orElse: () => DonationModel(
-            id: '',
-            donorName: 'Unknown',
-            email: '',
-            phone: '',
-            pan: '',
-            address: '',
-            projectName: 'Unknown',
-            amount: 0.0,
-            createdAt: DateTime.now(),
-          ),
-        );
-
-        // Open PDF preview screen
         if (mounted) {
           Navigator.push(
             context,
@@ -209,6 +317,7 @@ class _RecentScreenState extends State<RecentScreen> {
               builder: (context) => PdfPreviewScreen(
                 pdfFile: file,
                 donation: donation,
+                autoShare: false,
               ),
             ),
           );
@@ -217,13 +326,14 @@ class _RecentScreenState extends State<RecentScreen> {
         if (mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error downloading PDF: ${response.statusCode}')),
+            SnackBar(
+              content: Text('Error downloading PDF: ${response.statusCode}'),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        // Close loading dialog if still open
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error opening PDF: $e')),

@@ -238,13 +238,18 @@ class _LoginScreenState extends State<LoginScreen> {
     return SizedBox(
       height: 120,
       child: Image.asset(
-        'assets/logo/logo.png',
+        'assets/logo/app_icon.png',
         errorBuilder: (context, error, stackTrace) {
-          // Fallback to icon if logo not found
-          return const Icon(
-            Icons.account_balance,
-            size: 80,
-            color: Colors.blue,
+          return Image.asset(
+            'assets/logo/logo.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.account_balance,
+                size: 80,
+                color: Colors.blue,
+              );
+            },
           );
         },
         fit: BoxFit.contain,

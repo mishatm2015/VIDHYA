@@ -56,6 +56,15 @@ class FirestoreService extends ChangeNotifier {
     }
   }
 
+  Future<void> deleteDonation(String id) async {
+    try {
+      await _firestore.collection('donations').doc(id).delete();
+    } catch (e) {
+      debugPrint('Error deleting donation: $e');
+      rethrow;
+    }
+  }
+
   Stream<List<DonationModel>> getDonationsStream() {
     return _firestore
         .collection('donations')

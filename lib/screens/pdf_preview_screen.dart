@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../models/donation_model.dart';
 
 class PdfPreviewScreen extends StatefulWidget {
@@ -120,12 +120,33 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
 
   Future<void> _shareViaEmail() async {
     try {
-      // Share the PDF file with email intent
-      await Share.shareXFiles(
-        [XFile(widget.pdfFile.path)],
-        text: 'Donation Receipt - ${widget.donation.donorName}\n\nAmount: ₹${widget.donation.amount.toStringAsFixed(2)}\nProject: ${widget.donation.projectName}',
+      final recipient = widget.donation.email.trim();
+      if (recipient.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No donor email found. Please add an email in the donation form.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final email = Email(
+        recipients: [recipient],
         subject: 'Donation Receipt - ${widget.donation.donorName}',
+        body:
+            'Dear ${widget.donation.donorName},\n\n'
+            'Please find attached your donation receipt.\n\n'
+            'Amount: ₹${widget.donation.amount.toStringAsFixed(2)}\n'
+            'Project: ${widget.donation.projectName}\n\n'
+            'Thank you for your generous contribution.\n\n'
+            'Vidhyakaanthi Foundation',
+        attachmentPaths: [widget.pdfFile.path],
+        isHTML: false,
       );
+
+      await FlutterEmailSender.send(email);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
