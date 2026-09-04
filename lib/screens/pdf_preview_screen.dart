@@ -139,7 +139,7 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
 
       final email = Email(
         recipients: [recipient],
-        subject: 'Donation Receipt - ${widget.donation.projectName}',
+        subject: 'Donation Receipt - ${widget.donation.donorName}',
         body:
             'Dear ${widget.donation.donorName},\n\n'
             'We are delighted to share your donation receipt for the ${widget.donation.projectName} project.\n\n'
