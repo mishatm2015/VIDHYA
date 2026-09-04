@@ -132,15 +132,20 @@ class _PdfPreviewScreenState extends State<PdfPreviewScreen> {
         return;
       }
 
+      final amountStr = widget.donation.amount.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+
       final email = Email(
         recipients: [recipient],
-        subject: 'Donation Receipt - ${widget.donation.donorName}',
+        subject: 'Donation Receipt - ${widget.donation.projectName}',
         body:
             'Dear ${widget.donation.donorName},\n\n'
-            'Please find attached your donation receipt.\n\n'
-            'Amount: ₹${widget.donation.amount.toStringAsFixed(2)}\n'
-            'Project: ${widget.donation.projectName}\n\n'
-            'Thank you for your generous contribution.\n\n'
+            'We are delighted to share your donation receipt for the ${widget.donation.projectName} project.\n\n'
+            'Thank you so much for your generous contribution of ₹$amountStr. Your kindness and thoughtfulness will make a real difference in the lives of those in need.\n\n'
+            'We truly appreciate your valuable support and look forward to your continued association with us.\n\n'
+            'Warm regards,\n'
             'Vidhyakaanthi Foundation',
         attachmentPaths: [widget.pdfFile.path],
         isHTML: false,

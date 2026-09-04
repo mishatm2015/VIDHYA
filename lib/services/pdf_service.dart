@@ -10,14 +10,14 @@ import '../utils/number_to_words.dart';
 class PdfService {
   static int _receiptCounter = 1;
 
-  // Foundation details - Update these with your actual details
-  static const String registrationNumber = '[Your Registration Number]';
-  static const String panNumber = '[Your PAN Number]';
-  static const String officeAddress = '[Your Office Address]';
-  static const String foundationYear = '2020'; // Update with your foundation year
-  static const String mobileNumber = '[Your Mobile Number]';
-  static const String emailAddress = '[Your Email]';
-  static const String website = '[Your Website]';
+  static const String registrationNumber = 'U94990KL2025NPL096431';
+  static const String panNumber = 'AALCV3365P';
+  static const String officeAddress =
+      'VIDHYAKAANATHI FOUNDATION, NEAR KATHIKODE JUMAMASJID, Koolimuttam, Kodungallur, Thrissur- 680691, Kerala';
+  static const String foundationYear = '2020';
+  static const String mobileNumber = '9633663379, 9633663378';
+  static const String emailAddress = 'info@vidhyakaanthifoundation.com';
+  static const String website = 'www.vidhyakaanthifoundation.com';
 
   static String generateReceiptNumber() {
     final now = DateTime.now();
